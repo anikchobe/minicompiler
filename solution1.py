@@ -28,8 +28,8 @@ def execute_one(text: str) -> int:
     pass
 
 
-
-assert execute_one("17 * 3") == 51
-assert execute_one("20 // 6") == 3
-assert execute_one("20 % 6") == 2
-assert execute_one("-7 - -2") == -5
+if __name__ == "__main__":
+    assert execute_one("17 * 3") == 51
+    assert execute_one("20 // 6") == 3
+    assert execute_one("20 % 6") == 2
+    assert execute_one("-7 - -2") == -5
