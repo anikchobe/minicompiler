@@ -1,26 +1,30 @@
+def parse_int(input: str) -> int:
+    try:
+        num = int(input)
+    except ValueError:
+        print("Got non integer argument: ", input)
+    return num
+    
+
 def execute_one(text: str) -> int:
     tokens = text.split()
     if len(tokens) != 3:
         print(f'Wrong token coun, expected 3 got {len(tokens)}')
         return 0
-    try:
-        left = int(tokens[0])
-    except ValueError:
-        print("Non-integer operand token 0")
-    try:
-        right = int(tokens[2])
-    except ValueError:
-        print("Non-integer operand token 2")
 
-    if "+" in tokens:
+    left, operator, right = tokens
+    left = parse_int(left)
+    right = parse_int(right)
+
+    if operator == "+":
         return left + right
-    if "-" in tokens:
+    if operator == "-":
         return left - right
-    if "*" in tokens:
+    if operator == "*":
         return left * right
-    if "//" == tokens[1]:
+    if operator == "//":
         return left // right
-    if "%" == tokens[1]:
+    if operator == "%":
         return left % right
     else:
         print("Unknown Operator")
