@@ -1,4 +1,4 @@
-## Stage 1 — Decode and execute one instruction
+## Decode and execute one instruction
 
 ### Problem
 
