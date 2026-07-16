@@ -4,12 +4,12 @@ def parse_int(input: str) -> int:
     except ValueError:
         print("Got non integer argument: ", input)
     return num
-    
+
 
 def execute_one(text: str) -> int:
     tokens = text.split()
     if len(tokens) != 3:
-        print(f'Wrong token coun, expected 3 got {len(tokens)}')
+        print(f"Wrong token coun, expected 3 got {len(tokens)}")
         return 0
 
     left, operator, right = tokens
