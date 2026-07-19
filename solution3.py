@@ -1,3 +1,5 @@
+from solution2 import execute_one
+
 def run_program(lines: list[str]) -> tuple[dict[str, int], list[int]]:
     resultDict = {}
     resultList = []
@@ -6,11 +8,11 @@ def run_program(lines: list[str]) -> tuple[dict[str, int], list[int]]:
     return resultDict, resultList
     
 
-def processLine(line, lineNum, resultDict, resultList):
+def processLine(line: str, lineNum: int, resultDict: dict[str, int], resultList: list[int]) -> None:
     tokens = line.split()
     if len(tokens) == 0:
         return
-    if tokens[0] =='let':
+    if tokens[0] =='let': 
         resultDict[tokens[1]] = processExpression(tokens[3:], lineNum, resultDict)
     elif tokens[0] == 'print':
         resultList.append(processExpression(tokens[1:], lineNum, resultDict))
@@ -20,7 +22,7 @@ def processLine(line, lineNum, resultDict, resultList):
 
 
 
-def processExpression(tokens, lineNum, resultDict):
+def processExpression(tokens: list[str], lineNum: int, resultDict: dict[str, int]) -> int:
     if len(tokens) == 1:
         return parse_int(tokens[0], resultDict)
     else:
@@ -32,28 +34,12 @@ def processExpression(tokens, lineNum, resultDict):
     
 
 
-def parse_int(input: str, resultDict) -> int:
+def parse_int(input: str, resultDict: dict[str, int]) -> int:
     try:
         num = int(input) if input not in resultDict else resultDict[input]
     except ValueError:
         print("Got non integer argument: ", input)
     return num
-
-
-def execute_one(left, right, operator):
-    if operator == "+":
-        return left + right
-    if operator == "-":
-        return left - right
-    if operator == "*":
-        return left * right
-    if operator == "//":
-        return left // right
-    if operator == "%":
-        return left % right
-    else:
-        print("Unknown Operator")
-        return 0
 
 def run_source(source: str) -> tuple[dict[str, int], list[int]]:
     return run_program(source.splitlines())
