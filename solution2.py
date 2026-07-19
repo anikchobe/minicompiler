@@ -1,10 +1,11 @@
-def parse_int(input: str, result: list[int]) -> int:
-    try:
-        num = int(input) if input != "ans" else result[-1]
-    except ValueError:
-        print("Got non integer argument: ", input)
-    return num
+from solution1 import MiniCompilerSyntaxError
 
+def parse_int(input: str, result: list[int]) -> int:
+    """Parse integer or ans identifier"""
+    try:
+        return int(input) if input != "ans" else result[-1]
+    except ValueError:
+        raise MiniCompilerSyntaxError("Got non integer argument: ", input)
 
 def execute_one(left, right, operator):
     if operator == "+":
@@ -18,9 +19,8 @@ def execute_one(left, right, operator):
     if operator == "%":
         return left % right
     else:
-        print("Unknown Operator")
-        return 0
-
+        raise MiniCompilerSyntaxError("Unknown Operator")
+        
 
 def run_program(input: list[str]) -> list[int]:
     result = []
@@ -29,11 +29,9 @@ def run_program(input: list[str]) -> list[int]:
         if len(tokens) == 0:
             continue
         if len(tokens) != 3:
-            print(f"Wrong token count on line {i}, expected 3 got {len(tokens)}")
-            return 0
+            raise MiniCompilerSyntaxError(f"Wrong token count on line {i}, expected 3 got {len(tokens)}")
         if i == 0 and "ans" in tokens:
-            print("Cannot read ans before executing any instruction")
-            return 0
+            raise MiniCompilerSyntaxError("Cannot read ans before executing any instruction")
         left, operator, right = tokens
         left = parse_int(left, result)
         right = parse_int(right, result)
