@@ -27,7 +27,6 @@ class BinaryExpr(Expr):
     right: Expr
 
 def parse_atom(token: str) -> Expr:
-    # TODO: return IntegerExpr or VariableExpr.
     if token.isdecimal():
         return IntegerExpr(int(token))
     elif token.isidentifier():
@@ -82,6 +81,8 @@ def _self_test() -> None:
     e = BinaryExpr(a, '+', c)
     print(e)
     f = BinaryExpr(IntegerExpr(5), '+', VariableExpr('x'))
+    g = BinaryExpr(a, '+', f)
+    print(g)
     print(e == f)
     print(parse_atom('55'))
     print(parse_atom('width'))
@@ -91,6 +92,7 @@ def _self_test() -> None:
     #print(parse_expression("a + 77 + 7"))
     expression = parse_expression("width * 3")
     assert evaluate_expression(expression, {"width": 7}) == 21
+    assert evaluate_expression(expression, {"width": 8}) == 24
 
     from dataclasses import FrozenInstanceError
 

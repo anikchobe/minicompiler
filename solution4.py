@@ -57,16 +57,23 @@ class BinaryExpr:
 Expr: TypeAlias = IntegerExpr | VariableExpr | BinaryExpr
 
 
+@dataclass(frozen=True)
 class LetStmt:
-    pass
+    name: str
+    expression: Expr
+    lineNum: int
 
 
+@dataclass(frozen=True)
 class PrintStmt:
-    pass
+    expression: Expr
+    lineNum: int
 
 
+@dataclass(frozen=True)
 class ExprStmt:
-    pass
+    expression: Expr
+    lineNum: int
 
 
 Stmt: TypeAlias = LetStmt | PrintStmt | ExprStmt
@@ -83,11 +90,14 @@ class ExecutionResult:
 
 
 def strip_comment(raw_line: str) -> str:
-    pass
+    if '#' in raw_line:
+        return raw_line[:raw_line.index("#")]
+    return raw_line
 
 
 def validate_identifier(name: str, line_number: int) -> None:
-    pass
+    if not name.isidentifier() or name in RESERVED_NAMES or keyword.iskeyword(name):
+        raise NameError
 
 
 def parse_atom_token(token: str, line_number: int) -> Expr:
@@ -122,13 +132,24 @@ def parse_expression_tokens(tokens: list[str], line_number: int) -> Expr:
 def parse_statement_tokens(tokens: list[str], line_number: int) -> Stmt:
     if not tokens:
         raise MiniCalcSyntaxError(f"line {line_number}: empty statement")
-
-    pass
+    if tokens[0] == 'let':
+        return LetStmt(tokens[1], parse_expression_tokens(tokens[3:], line_number), line_number)
+    if tokens[0] == 'print':
+        return PrintStmt(parse_expression_tokens(tokens[1:], line_number), line_number)
+    return ExprStmt(parse_expression_tokens(tokens, line_number), line_number)
+    
 
 
 def parse_program(source: str) -> Program:
     program: Program = []
-    pass
+    for lineNum, line in enumerate(source.splitlines()):
+        line = strip_comment(line)
+        tokens = line.split()
+        if len(tokens) == 0:
+            continue
+        program.append(parse_statement_tokens(tokens, lineNum))
+    return program
+    
 
 
 # ------------------------------- Interpreter -------------------------------
@@ -148,29 +169,35 @@ def evaluate_expression(expression: Expr, environment: dict[str, int]) -> int:
         right = evaluate_expression(expression.right, environment)
         return apply_operator(left, expression.operator, right)
 
-    raise TypeError(f"unknown expression node: {type(expression).__name__}")
+    raise MiniCalcRuntimeError(f"unknown expression node: {type(expression).__name__}")
 
 
 def execute_statement(
     statement: Stmt, environment: dict[str, int], output: list[int]
 ) -> None:
-    pass
-
-    raise TypeError(f"unknown statement node: {type(statement).__name__}")
+    if isinstance(statement, LetStmt):
+        environment[statement.name] = evaluate_expression(statement.expression, environment)
+    if isinstance(statement, PrintStmt):
+        output.append(evaluate_expression(statement.expression, environment))
+    environment['ans'] = evaluate_expression(statement.expression, environment)
+    
 
 
 def execute_program(
     program: Program, initial_environment: dict[str, int] | None = None
 ) -> ExecutionResult:
-    pass
+    environment = dict(initial_environment) if initial_environment else {}
+    result: list[int] = []
+    for statement in program:
+        execute_statement(statement, environment, result)
+    return ExecutionResult(environment, result)
+    
 
 
 def run_source(
     source: str, initial_environment: dict[str, int] | None = None
 ) -> ExecutionResult:
     return execute_program(parse_program(source), initial_environment)
-
-
 
 
 def _self_test() -> None:
@@ -193,8 +220,9 @@ if __name__ == "__main__":
     _self_test()
     demo = """
     let width = 17 * 3
-    let height = 4
+    let height = 4 # is this enough?
     let area = width * height
+    # this is a comment
     print area
     """
     ast = parse_program(demo)
