@@ -54,14 +54,43 @@ class VMResult:
 
 
 def compile_expression(expression: Expr, code: Bytecode) -> None:
-    pass
+    if isinstance(expression, IntegerExpr):
+        code.append(("PUSH_CONST", expression.value))
+        return
+    if isinstance(expression, VariableExpr):
+        code.append(("LOAD", expression.name))
+        return
+    if isinstance(expression, BinaryExpr):
+        compile_expression(expression.left, code)
+        compile_expression(expression.right, code)
+        code.append((OPCODE_FOR_OPERATOR[expression.operator], None))
+        return
+    raise TypeError(f"Unknown Expression: {expression.__name__}")
 
 
 def compile_statement(statement: Stmt, code: Bytecode) -> None:
-    pass
+    if isinstance(statement, LetStmt):
+        compile_expression(statement.expression, code)
+        code.append(("STORE", statement.name))
+        return
+    if isinstance(statement, PrintStmt):
+        compile_expression(statement.expression, code)
+        code.append(("PRINT", None))
+        return
+    if isinstance(statement, ExprStmt):
+        compile_expression(statement.expression, code)
+        code.append(("STORE", 'ans'))
+        return
+    raise TypeError(f"Unknown Statement: {statement.__name__}")
+    
 
 def compile_program(program: Program) -> Bytecode:
-    pass
+    code: Bytecode = []
+    for statement in program:
+        compile_statement(statement, code)
+    code.append(("HALT", None))
+    return code
+    
 
 # ------------------------------ Disassembler -------------------------------
 
@@ -85,10 +114,14 @@ def execute_bytecode(
     steps = 0
 
     def pop_value() -> int:
-        pass
+        if not stack:
+            raise MiniCalcVMError(f"PC: {pc} operand stack underflow")
+        return stack.pop()
+        
     
     def require_int(argument: InstructionArgument, opcode: str) -> int:
         pass
+        
     
     def require_name(argument: InstructionArgument, opcode: str) -> str:
         pass
