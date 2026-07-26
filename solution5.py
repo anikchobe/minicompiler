@@ -120,11 +120,67 @@ def execute_bytecode(
         
     
     def require_int(argument: InstructionArgument, opcode: str) -> int:
-        pass
+        if not isinstance(argument, int):
+            raise MiniCalcVMError(f'Pc {pc} {opcode} requires an integer argument')
+        return argument
         
     
     def require_name(argument: InstructionArgument, opcode: str) -> str:
-        pass
+        if not isinstance(argument, str):
+            raise MiniCalcVMError(f'Pc {pc} {opcode} requires an string argument')
+        return argument
+
+    while True:
+        opcode, argument = code[pc]
+
+        if opcode == "PUSH_CONST":
+            stack.append(require_int(argument, opcode))
+            pc += 1
+            continue
+
+        if opcode == "LOAD":
+            name = require_name(argument, opcode)
+            if name not in variables:
+                raise MiniCalcVMError(f'pc {pc} underfined varibale {name}')
+            stack.append(variables[name])
+            pc += 1
+            continue
+
+        if opcode == "STORE":
+            name = require_name(argument, opcode)
+            variables[name] = pop_value()
+            pc += 1
+            continue
+
+        if opcode in {'ADD', 'SUB', 'MUL', 'DIV', 'MOD'}:
+            right = pop_value()
+            left = pop_value()
+            match opcode:
+                case 'ADD':
+                    result = left + right
+                case 'SUB':
+                    result = left - right
+                case 'MUL':
+                    result = left * right
+                case 'DIV':
+                    result = left // right
+                case 'MOD':
+                    result = left % right
+            stack.append(result)
+            pc += 1
+            continue
+
+        if opcode == 'PRINT':
+            output.append(pop_value())
+            pc += 1
+            continue
+
+        if opcode == 'HALT':
+            if stack:
+                raise MiniCalcVMError(f'pc {pc} HALT reached with non-empty stack {stack}')
+            return VMResult(variables, output, steps)
+            
+        
 
 
 def _self_test() -> None:
