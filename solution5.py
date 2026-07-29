@@ -96,7 +96,12 @@ def compile_program(program: Program) -> Bytecode:
 
 
 def disassemble(code: Bytecode) -> str:
-    pass
+    lines: list[str] = []
+    for address, (opcode, argument) in enumerate(code):
+        argument_text = "" if argument is None else str(argument)
+        lines.append(f"{address:04d}  {opcode:<20} {argument_text}")
+    return "\n".join(lines)
+
 
 # ------------------------------ Virtual machine ----------------------------
 
