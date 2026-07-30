@@ -122,21 +122,27 @@ def execute_bytecode(
         if not stack:
             raise MiniCalcVMError(f"PC: {pc} operand stack underflow")
         return stack.pop()
-        
-    
+
     def require_int(argument: InstructionArgument, opcode: str) -> int:
         if not isinstance(argument, int):
             raise MiniCalcVMError(f'Pc {pc} {opcode} requires an integer argument')
         return argument
-        
-    
+
     def require_name(argument: InstructionArgument, opcode: str) -> str:
         if not isinstance(argument, str):
             raise MiniCalcVMError(f'Pc {pc} {opcode} requires an string argument')
         return argument
 
     while True:
+        if not 0 <= pc < len(code):
+            raise MiniCalcVMError(f'pc {pc} is outside the bytecode')
+        if steps >= max_steps:
+            raise MiniCalcVMError(f'execution exceeded {max_steps} instructions')
+
         opcode, argument = code[pc]
+        if trace:
+            print(f'pc={pc:04d}  {opcode:<20} stack={stack} vars={variables}')
+        steps += 1
 
         if opcode == "PUSH_CONST":
             stack.append(require_int(argument, opcode))
@@ -160,17 +166,20 @@ def execute_bytecode(
         if opcode in {'ADD', 'SUB', 'MUL', 'DIV', 'MOD'}:
             right = pop_value()
             left = pop_value()
-            match opcode:
-                case 'ADD':
-                    result = left + right
-                case 'SUB':
-                    result = left - right
-                case 'MUL':
-                    result = left * right
-                case 'DIV':
-                    result = left // right
-                case 'MOD':
-                    result = left % right
+            try:
+                match opcode:
+                    case 'ADD':
+                        result = left + right
+                    case 'SUB':
+                        result = left - right
+                    case 'MUL':
+                        result = left * right
+                    case 'DIV':
+                        result = left // right
+                    case 'MOD':
+                        result = left % right
+            except ZeroDivisionError as exc:
+                raise MiniCalcVMError(f'pc {pc}: {exc}') from exc
             stack.append(result)
             pc += 1
             continue
@@ -180,12 +189,22 @@ def execute_bytecode(
             pc += 1
             continue
 
+        if opcode == 'JUMP':
+            pc = require_int(argument, opcode)
+            continue
+
+        if opcode == 'JUMP_IF_NONPOSITIVE':
+            target = require_int(argument, opcode)
+            condition = pop_value()
+            pc = target if condition <= 0 else pc + 1
+            continue
+
         if opcode == 'HALT':
             if stack:
                 raise MiniCalcVMError(f'pc {pc} HALT reached with non-empty stack {stack}')
             return VMResult(variables, output, steps)
-            
-        
+
+        raise MiniCalcVMError(f'pc {pc} unknown opcode {opcode!r}')
 
 
 def _self_test() -> None:

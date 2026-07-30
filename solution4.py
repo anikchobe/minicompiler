@@ -177,8 +177,10 @@ def execute_statement(
 ) -> None:
     if isinstance(statement, LetStmt):
         environment[statement.name] = evaluate_expression(statement.expression, environment)
+        return
     if isinstance(statement, PrintStmt):
         output.append(evaluate_expression(statement.expression, environment))
+        return
     environment['ans'] = evaluate_expression(statement.expression, environment)
     
 
