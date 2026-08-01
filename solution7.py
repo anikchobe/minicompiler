@@ -7,12 +7,13 @@ from solution4 import (
     IntegerExpr,
     LetStmt,
     PrintStmt,
-    Stmt,
-    Program,
     VariableExpr,
 )
 from solution5 import execute_bytecode
-from solution5 import (
+from solution6 import (
+    LoopProgram,
+    LoopStatement,
+    RepeatStmt,
     compile_program as compile_to_bytecode,
     execute_program,
     parse_program,
@@ -22,6 +23,7 @@ from solution5 import (
 class PythonCompiler:
     def __init__(self) -> None:
         self.lines: list[str] = []
+        self.next_loop_id = 0
 
     @staticmethod
     def mangle_variable(name: str) -> str:
@@ -40,11 +42,12 @@ class PythonCompiler:
             # Parentheses preserve the AST meaning even after the language grows
             # to support larger expressions with precedence.
             return f"({left} {expression.operator} {right})"
+        raise TypeError(type(expression).__name__)
 
     def emit(self, indentation: int, text: str) -> None:
         self.lines.append("    " * indentation + text)
 
-    def statement(self, statement: Stmt, indentation: int) -> None:
+    def statement(self, statement: LoopStatement, indentation: int) -> None:
         if isinstance(statement, LetStmt):
             self.emit(
                 indentation,
@@ -67,8 +70,25 @@ class PythonCompiler:
             )
             return
 
+        if isinstance(statement, RepeatStmt):
+            loop_id = self.next_loop_id
+            self.next_loop_id += 1
+            loop_variable = f"_loop_{loop_id}"
+            count = self.expression(statement.count)
+            self.emit(
+                indentation,
+                f"for {loop_variable} in range(max(0, {count})):",
+            )
+            if statement.body:
+                for body_statement in statement.body:
+                    self.statement(body_statement, indentation + 1)
+            else:
+                self.emit(indentation + 1, "pass")
+            return
 
-    def compile(self, program: Program) -> str:
+        raise TypeError(type(statement).__name__)
+
+    def compile(self, program: LoopProgram) -> str:
         self.emit(0, "def run():")
         self.emit(1, "_output = []")
         for statement in program:
@@ -77,7 +97,7 @@ class PythonCompiler:
         return "\n".join(self.lines) + "\n"
 
 
-def compile_to_python(program: Program) -> str:
+def compile_to_python(program: LoopProgram) -> str:
     return PythonCompiler().compile(program)
 
 
@@ -94,36 +114,40 @@ def execute_generated_python(source: str) -> list[int]:
     return result
 
 
-def compile_and_run(program: Program) -> list[int]:
+def compile_and_run(program: LoopProgram) -> list[int]:
     return execute_generated_python(compile_to_python(program))
-
 
 
 if __name__ == "__main__":
     demo_source = """
-    # Parsing this text must not execute it.
-    let x = 17 * 3
+    let x = 1
+    repeat 5
+        print x
+        let x = x * 2
+    end
     print x
-    x + 1
-    print ans
     """
-    # demo_source = """
-    # let x = 1
-    # repeat 5
-    #     print x
-    #     let x = x * 2
-    # end
-    # print x
-    # """
-    demo_program = parse_program(demo_source) # AST
-    generated_source = compile_to_python(demo_program) # Generate python from AST
+    demo_program = parse_program(demo_source)
+    generated_source = compile_to_python(demo_program)
     print(generated_source)
-    python_output = execute_generated_python(generated_source) # Execute generated Python
-    
-    direct = execute_program(demo_program).output # Interpret AST
-    bytecode = compile_to_bytecode(demo_program)  # Generate VM Bytecode
-    vm = execute_bytecode(bytecode).output        # Run bytecode on VM
+    python_output = execute_generated_python(generated_source)
 
-    assert direct == python_output == vm == [51, 52]
-    
-    print("output:", execute_generated_python(generated_source))
+    direct = execute_program(demo_program).output
+    bytecode = compile_to_bytecode(demo_program)
+    vm = execute_bytecode(bytecode).output
+
+    assert direct == python_output == vm == [1, 2, 4, 8, 16, 32]
+    print("output:", python_output)
+
+
+# Notes:
+#
+# Each repeat becomes a Python for loop with a fresh _loop_N name.  Using
+# range(max(0, count)) matches the MiniCalc rule that a nonpositive count runs
+# zero times, and it evaluates the count once, just like the VM lowering.
+#
+# Parentheses around every binary expression mean Python's precedence can never
+# change the shape of the MiniCalc AST.  That is boring, and it is the point.
+#
+# exec() is only used on the Python text this compiler just generated.  It is
+# never used to evaluate MiniCalc source directly.
